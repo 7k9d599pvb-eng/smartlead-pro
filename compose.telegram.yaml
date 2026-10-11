@@ -1,0 +1,7 @@
+# Optional deployment override for a verified Telegram API address.
+# Use with: docker compose -f compose.yaml -f compose.telegram.yaml ...
+# TLS verification still uses api.telegram.org and remains enabled.
+services:
+  bot:
+    extra_hosts:
+      - "api.telegram.org=${TELEGRAM_API_IP:?Set a verified TELEGRAM_API_IP in .env}"

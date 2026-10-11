@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smartlead-bot"
+version = "1.2.0"
+description = "Telegram lead intake, service bookings and status tracking for small businesses"
+requires-python = ">=3.12"
+dependencies = [
+  "aiogram>=3.22,<4",
+  "SQLAlchemy[asyncio]>=2.0.43,<2.1",
+  "asyncpg>=0.30,<1",
+  "alembic>=1.16,<2",
+  "pydantic-settings>=2.10,<3",
+  "python-dotenv>=1.2,<2",
+  "tzdata>=2025.2",
+  "Babel>=2.18,<3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.4,<10", "pytest-asyncio>=1.1,<2", "ruff>=0.13,<1"]
+
+[project.scripts]
+smartlead = "smartlead.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+smartlead = ["locales/*/messages.json"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = ["integration: requires a dedicated PostgreSQL test database"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
