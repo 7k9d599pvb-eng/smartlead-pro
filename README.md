@@ -1,244 +1,344 @@
 # SmartLead Pro
 
-SmartLead Pro is a Telegram bot for service businesses. Customers can submit a
-service request, book an available appointment, check request status, and manage
-upcoming appointments. Allowlisted administrators manage requests, appointments,
-services, and business settings in Telegram.
+## Project Overview
+
+SmartLead Pro is a Telegram bot for small service businesses. Customers submit
+requests, book appointments, and follow their progress. Administrators manage
+requests, bookings, services, and the support contact inside Telegram.
+
+This repository is a portfolio project. It demonstrates a working single-business
+workflow without a web dashboard, payments, or an external CRM.
 
 ## Features
 
-- English, French, Russian, Ukrainian, German, and Japanese interfaces, with a
-  saved language preference for each customer and administrator.
-- Guided request and booking forms with input checks, review, Back, and Cancel.
-- Unique request and booking references, such as `SL-R-000001` and `SL-A-000001`.
-- Availability based on business hours and one shared calendar. PostgreSQL
-  prevents overlapping bookings across services.
-- Customer views for their own requests and upcoming appointments, with status
-  updates and appointment cancellation.
-- An administrator panel for request filters and status changes, appointments,
-  service creation and editing, activation, support contact, and statistics.
-- Optional group alerts for new requests and bookings, with buttons to open the
-  record. Every administrator action checks the allowlist.
-- Transactional status history and a PostgreSQL notification outbox with retry
-  handling for transient delivery failures.
-- Migrations that preserve existing requests, appointments, service-name
-  snapshots, and queued notifications.
+- Guided request and booking forms with validation, review, Back, and Cancel.
+- Request and booking references such as `SL-R-000001` and `SL-A-000001`.
+- Customer views restricted to their own requests and upcoming appointments.
+- Booking availability based on business hours, notice, and a shared calendar.
+  PostgreSQL prevents overlapping active appointments, including concurrent
+  bookings across different services.
+- Customer and administrator appointment cancellation, with the slot released
+  for another booking.
+- An administrator panel with request filters, pagination, status changes,
+  appointment management, service editing, support settings, and statistics.
+- Optional group alerts for new requests and bookings. Every administrative
+  callback checks the Telegram ID allowlist on the server.
+- Transactional status history and a PostgreSQL notification outbox with retries.
+- Six interface languages, saved separately for each user.
 
-SmartLead supports one business and one shared calendar. Employee schedules,
-payments, a web dashboard, and AI features are outside its scope.
+## Supported Languages
 
-## Stack
+| Language | Code |
+| --- | --- |
+| English | `en` |
+| Français | `fr` |
+| Русский | `ru` |
+| Українська | `uk` |
+| Deutsch | `de` |
+| 日本語 | `ja` |
 
-Python 3.12 or later, aiogram 3, PostgreSQL 17, SQLAlchemy 2, Alembic, Babel, Docker
-Compose, pytest, and Ruff. Runtime and development dependencies are pinned in
-`requirements.lock` and `requirements-dev.lock`.
+New users choose a language on their first `/start`. PostgreSQL stores the
+preference for subsequent visits. The globe button in the main menu and the
+`/language` command open the picker again. A language change closes an unfinished
+form but leaves confirmed requests and appointments intact. Profiles created
+before the language migration default to English.
 
-## Start with Docker Compose
+Menus, forms, validation messages, receipts, statuses, support screens, the admin
+panel, and notification buttons are localized. Babel formats calendar dates.
+Times use a 24-hour clock in the business timezone, with its UTC offset. Changing
+language does not change a booked time. Service names, service descriptions, and
+customer input remain as entered.
 
-Install Docker Engine and Docker Compose v2.20 or later. Copy the example
-configuration and edit it locally:
+Customer notifications and private administrator alerts use the recipient's
+saved language when the event is committed. Shared group alerts use
+`ADMIN_NOTIFICATION_LANGUAGE`. The outbox keeps the rendered text and keyboard
+for retries; changing language does not rewrite or resend earlier notifications.
 
-```sh
+Translations are stored in `src/smartlead/locales/<language>/messages.json`.
+Missing translations fall back to English. Tests check matching keys and named
+placeholders in all six catalogs. See the [localization guide](docs/localization.md).
+
+## Tech Stack
+
+Python 3.12+, aiogram 3, PostgreSQL 17, SQLAlchemy 2, Alembic, Babel, Docker Compose,
+pytest, and Ruff. Runtime and development dependencies are pinned in
+`requirements.lock` and `requirements-dev.lock`. CI uses Python 3.12 and
+PostgreSQL 17.
+
+The Python package lives in `src/smartlead/`. Telegram handlers are in `bot/`,
+business rules in `services/`, persistence in `db/`, and notification delivery in
+`workers/`. Schema changes are in `alembic/versions/`; automated tests are in
+`tests/`. The Compose configuration is named `compose.yaml`.
+
+## Installation
+
+Clone the repository:
+
+```bash
 git clone https://github.com/7k9d599pvb-eng/smartlead-pro.git
 cd smartlead-pro
-cp .env.example .env
 ```
 
-Set `BOT_TOKEN`, `ADMIN_IDS`, and a strong `POSTGRES_PASSWORD`. The password in
-`DATABASE_URL` must match. Use a URL-safe password, or percent-encode reserved
-characters in the database URL. Keep `.env` private: do not commit it, share it,
-or paste its contents into chat.
+### Docker
 
-Start PostgreSQL, apply migrations, seed the sample services, and start the bot:
+Install Docker Engine with Docker Compose 2.20 or later, or Docker Desktop on
+Windows or macOS. This route installs Python dependencies inside the image;
+a local Python installation is not needed.
 
-```sh
-docker compose up --build -d
-docker compose logs -f bot
-```
+### Local Python
 
-Compose waits for PostgreSQL to become healthy, then runs the migration and seed
-services before starting the bot. To stop the stack, run `docker compose down`.
-The named PostgreSQL volume keeps data between container restarts.
+Install Python 3.12 or later and PostgreSQL 17. Check `python3 --version` on Linux
+or macOS, or `python --version` on Windows, before creating the environment.
+The interpreter must report Python 3.12 or later.
 
-## Run with Python
+Linux and macOS, using Bash or Zsh:
 
-Use Python 3.12 or later and a PostgreSQL database reachable from your machine.
-Set `DATABASE_URL` in `.env` to a `postgresql+asyncpg://` URL for that database.
-For a local database, use `127.0.0.1` as the host instead of Compose's `db`.
-
-```sh
-python -m venv .venv
-```
-
-Activate the virtual environment. Use the command for your shell:
-
-```sh
-# macOS or Linux
+```bash
+python3 -m venv .venv
 source .venv/bin/activate
-
-# Windows PowerShell
-.venv\Scripts\Activate.ps1
 ```
 
-Then install the development dependencies and the package:
+Windows PowerShell:
 
-```sh
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation, use `.\.venv\Scripts\python.exe` in place of
+`python` in the commands below. Activation is a convenience, not a requirement.
+
+Install the development dependencies and the package:
+
+```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.lock
 python -m pip install --no-deps -e .
 ```
 
-Copy `.env.example` to `.env` and set the required values. Apply the schema and
-seed the database before starting the bot; application startup does not run
-migrations automatically:
+## Configuration
 
-```sh
-alembic upgrade head
+Create a private `.env` file from the template.
+
+Linux and macOS:
+
+```bash
+cp .env.example .env
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Edit it locally. Do not commit real credentials or paste them into chat.
+
+| Setting | Purpose |
+| --- | --- |
+| `BOT_TOKEN` | Token issued by [@BotFather](https://t.me/BotFather); required to start the bot. |
+| `ADMIN_IDS` | Comma-separated numeric Telegram IDs allowed to use `/admin`. An empty list disables administrator access. |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Database credentials used by the Compose PostgreSQL service. Set a strong password. |
+| `DATABASE_URL` | Async SQLAlchemy URL for the same database, user, and password. Use host `db` in Compose or `127.0.0.1` for local PostgreSQL. |
+| `ADMIN_NOTIFICATION_CHAT_ID` | Optional negative group ID for new request and booking alerts. |
+| `ADMIN_NOTIFICATION_LANGUAGE` | Language for shared group alerts; defaults to `en`. |
+| `BUSINESS_TIMEZONE` | IANA timezone such as `Europe/London` or `Europe/Moscow`. |
+| `BUSINESS_SUPPORT_CONTACT` | Optional Telegram username or `t.me` profile link. |
+
+Keep the database name, user, and password in `DATABASE_URL` consistent with the
+database you create. Use a URL-safe password or percent-encode reserved characters
+in the URL. `.env.example` contains placeholders and the remaining settings.
+
+### Telegram setup
+
+Create the bot with BotFather and enter its token in `.env`. Start a private chat
+with the bot and use `/id` to find your numeric ID. Add administrator IDs to
+`ADMIN_IDS`, then use `/admin`. Each administrator must send `/start` before the
+bot can send them private notifications.
+
+For group alerts, add the bot to your group, allow it to send messages, and set
+`ADMIN_NOTIFICATION_CHAT_ID`. New requests and bookings then go to that group
+instead of administrators' private chats. Group buttons accept only allowlisted
+administrators and only in the configured group.
+
+The support contact can also be set or cleared under `/admin` → **Services** →
+**Support Contact**. If no contact is configured, the customer screen says so.
+
+### Local PostgreSQL
+
+For a new local installation, connect with a PostgreSQL administrator account:
+
+```bash
+psql -h 127.0.0.1 -U postgres -d postgres
+```
+
+Create a dedicated role and database in the interactive `psql` session. The
+`\password` command prompts for a password rather than putting it in SQL history:
+
+```sql
+CREATE ROLE smartlead LOGIN;
+\password smartlead
+CREATE DATABASE smartlead OWNER smartlead;
+```
+
+Skip creation if you already have a dedicated database. Set `DATABASE_URL` to
+`postgresql+asyncpg://smartlead:URL_ENCODED_PASSWORD@127.0.0.1:5432/smartlead`,
+replacing the password placeholder locally. The booking constraint uses
+PostgreSQL's built-in GiST support for timestamp ranges; no extra extension is
+required.
+
+## Running the Bot
+
+### Docker Compose
+
+From the repository root, after configuring `.env`:
+
+```bash
+docker compose config --quiet
+docker compose up --build -d
+docker compose logs -f bot
+```
+
+Compose waits for PostgreSQL, applies Alembic migrations, seeds missing defaults,
+and starts the bot. The migration and seed services exit after completing their
+work. Stop the stack with `docker compose down`. Data is kept in the named
+PostgreSQL volume; do not remove that volume when you want to keep existing data.
+
+### Local Python
+
+Apply the schema before starting the application:
+
+```bash
+python -m alembic upgrade head
 python -m smartlead check
 python -m smartlead seed
 python -m smartlead
 ```
 
+Application startup checks the schema but does not apply migrations.
 `python -m smartlead check` verifies the database connection, migration version,
-and appointment constraint without contacting Telegram. Normal seeding creates
-sample services and fills missing business settings while preserving edits made
-by an administrator. Use `python -m smartlead seed --sync-settings` only when you
-want environment values for the business name, support contact, hours, and
-timezone copied to the database again. The installed `smartlead` command can be
-used in place of `python -m smartlead`.
+and booking constraint without contacting Telegram. The installed `smartlead`
+command is equivalent to `python -m smartlead`.
 
-## Telegram and administrator setup
+Normal seeding creates sample services and fills missing business settings while
+preserving administrator edits. Use `python -m smartlead seed --sync-settings`
+only when you intend to copy business settings from the environment again.
 
-Create a bot with [@BotFather](https://t.me/BotFather) and set its token as
-`BOT_TOKEN`. Add the numeric Telegram IDs of administrators to `ADMIN_IDS`, as a
-comma-separated list. Use `/id` in a private chat with the bot to find your ID.
-Administrators open the admin panel with `/admin`. Each administrator must send
-the bot `/start` once before it can send them a private message.
+### Scheduling and persistence
 
-To send new request and booking alerts to a group, set
-`ADMIN_NOTIFICATION_CHAT_ID` to that group's negative numeric Telegram ID. Add
-the bot to the group and allow it to send messages. The notification buttons
-still require an allowlisted administrator, and group callbacks are accepted
-only in the configured group. Without this setting, new alerts go to the
-allowlisted administrators' private chats.
+Set hours, weekdays, notice, and booking horizon in `.env` before initial seeding.
+Defaults are Monday–Friday, 09:00–18:00, 30-minute slots, 60 minutes' notice, and a
+14-day horizon. Weekdays use Monday `0` through Sunday `6`. Opening and closing
+must be on the same day; overnight hours are not supported.
 
-Set `ADMIN_NOTIFICATION_LANGUAGE` to `en`, `fr`, `ru`, `uk`, `de`, or `ja` for
-shared group alerts. It defaults to `en`. A group receives one alert for an
-action; private administrator alerts use each administrator's saved language.
+Appointments are stored as UTC instants and displayed in the business timezone.
+Repeated clock times during daylight-saving transitions remain distinct; times
+in a clock gap cannot be booked. Cancelling an active upcoming appointment
+releases its slot across all services.
 
-`BUSINESS_SUPPORT_CONTACT` is optional. Set it to a Telegram username or `t.me`
-profile link. Administrators can also set or clear the customer support contact
-under `/admin` → **Services** → **Support Contact**.
+Migrations preserve existing records. Requests and appointments store service-name
+snapshots, so later service edits do not change their displayed service names.
+Deactivating a service keeps its existing records.
 
-See `.env.example` for all supported configuration options, including business
-hours, timezone, booking notice, and booking horizon.
+Run one polling process per token. Unfinished forms use in-memory FSM storage and
+are cleared on restart. Confirmed records, history, and queued notifications stay
+in PostgreSQL. Outbox delivery is at least once: a crash after Telegram accepts a
+message but before delivery is recorded can cause a retry to send it again.
 
-## Languages
+## Testing
 
-New users choose a language on their first `/start`. The choice is saved in
-PostgreSQL and used on subsequent visits. Use the globe button in the main menu
-or `/language` to change it. Switching language closes an unfinished form;
-confirmed requests and appointments stay intact. Users already registered before
-the language migration keep English until they choose another language.
+Install the development dependencies, then run:
 
-Menus, form prompts, validation errors, receipts, status labels, support screens,
-the admin panel, and notification buttons use the selected language. Babel
-formats calendar dates; booking times remain in the business timezone with a
-24-hour clock and UTC offset. Changing language does not change a booked time.
-Service names, descriptions, and customer-entered information remain as entered.
-
-Notifications use the recipient's saved language when the status event is
-committed. The existing outbox stores that text and keyboard for retries. A
-language change affects future events and does not resend or rewrite old notices.
-
-Translations live in `src/smartlead/locales/<language>/messages.json`. Missing
-translations fall back to English. Automated checks require all six shipped
-catalogs to contain the same keys and named placeholders. See
-[the localization guide](docs/localization.md) for maintenance details.
-
-## PostgreSQL and booking behavior
-
-The database stores users, services, business settings, requests, appointments,
-status history, and pending notifications. A booked appointment blocks its time
-across every service. Cancelling an upcoming booking releases the slot. Services
-are deactivated instead of deleted, and changes to a service do not rewrite
-existing request or appointment snapshots.
-
-Set business hours with `BUSINESS_OPEN`, `BUSINESS_CLOSE`,
-`BUSINESS_TIMEZONE`, and `BUSINESS_WEEKDAYS`. Timezones use IANA names such as
-`Europe/London` or `Europe/Moscow`; weekdays use Monday `0` through Sunday `6`.
-Opening and closing times must be on the same day. Overnight hours are not
-supported. The defaults are weekdays from 09:00 to 18:00, 30-minute slots, a
-60-minute booking notice, and a 14-day booking horizon.
-
-Appointments are stored as UTC instants and shown in the business timezone with
-the UTC offset. The two occurrences of a repeated clock time during a fall-back
-transition remain distinct; times in a spring-forward clock gap cannot be
-booked.
-
-Run one long-polling bot process per token. Unfinished forms use in-memory
-storage and are cleared when the bot restarts. Confirmed records, status history,
-and queued notifications remain in PostgreSQL. Notification delivery is at least
-once: if Telegram accepts a message but the worker stops before recording
-success, a retry may send it again.
-
-## Tests and scenarios
-
-Install the development dependencies and run the offline suite:
-
-```sh
+```bash
+python -m ruff check src alembic tests
+python -m ruff format --check src alembic tests
+python -m pip check
 python -m pytest -q -p no:cacheprovider
 ```
 
-Automated tests cover request and booking forms, validation and navigation,
-duplicate submissions, administrator access, booking conflicts and cancellation,
-database migrations, status history, and notification retries. They use
-synthetic Telegram updates and do not require a Telegram token or live Telegram
-access.
+Without `TEST_DATABASE_URL`, pytest runs the non-database tests and skips the
+PostgreSQL integration tests. Tests use synthetic Telegram updates; no live
+Telegram access or real bot token is needed.
 
-Language tests also cover the initial picker, preference changes and persistence,
-request and booking flows in all six languages, recipient-specific notices,
-localized dates, English fallback, and catalog integrity.
+### Full suite with local PostgreSQL
 
-PostgreSQL integration tests run only when `TEST_DATABASE_URL` points to an async
-PostgreSQL URL with `test` in its database name. They apply real Alembic
-migrations and clear application tables before each test. Use a dedicated,
-disposable test database; never point the suite at working or production data.
+Create a separate database and login for testing, for example `smartlead_test`,
+using the same interactive procedure as above. Integration tests require an
+async PostgreSQL URL with `test` in the database name. They apply real migrations
+and clear application tables before each test. Use a disposable test database.
 
-The Compose test profile uses a temporary PostgreSQL database. With a URL-safe
-`POSTGRES_PASSWORD`, Compose builds the test URL automatically. If your password
-needs URL encoding, set `TEST_DATABASE_URL` in `.env` explicitly, using the
-`db_test` host and the same password:
+Linux and macOS:
 
-```dotenv
-TEST_DATABASE_URL=postgresql+asyncpg://smartlead_test:URL_SAFE_PASSWORD@db_test:5432/smartlead_test
+```bash
+export TEST_DATABASE_URL='postgresql+asyncpg://smartlead_test:URL_ENCODED_PASSWORD@127.0.0.1:5432/smartlead_test'
+python -m pytest -q -p no:cacheprovider
 ```
 
-Then run:
+Windows PowerShell:
 
-```sh
+```powershell
+$env:TEST_DATABASE_URL = 'postgresql+asyncpg://smartlead_test:URL_ENCODED_PASSWORD@127.0.0.1:5432/smartlead_test'
+python -m pytest -q -p no:cacheprovider
+```
+
+Replace the password placeholder with the test database password. Local pytest
+reads `TEST_DATABASE_URL` from the process environment, not from `.env`.
+
+### Full suite with Docker Compose
+
+Prepare `.env` and set `POSTGRES_PASSWORD` first; Compose requires it even for the
+test profile. The profile uses a separate temporary PostgreSQL database. For a
+URL-safe password, Compose builds the test URL automatically. Otherwise set
+`TEST_DATABASE_URL` in `.env` using the `db_test` host and the percent-encoded
+value of `POSTGRES_PASSWORD`:
+
+```dotenv
+TEST_DATABASE_URL=postgresql+asyncpg://smartlead_test:URL_ENCODED_PASSWORD@db_test:5432/smartlead_test
+```
+
+```bash
 docker compose --profile test run --build --rm test
 docker compose --profile test stop db_test
 ```
 
-For a Telegram walkthrough with accounts and a database you control, follow the
-[human-operated demo](docs/demo.md).
+Coverage includes validation, Back and Cancel, duplicate submissions, ownership
+and administrator access, concurrent booking conflicts, cancellation, migration
+preservation, status history, and notification retries. Localization tests cover
+all six languages, preference persistence, dates, fallback, template variables,
+and recipient-specific notifications.
 
-Run Ruff with:
-
-```sh
-python -m ruff check src alembic tests
-```
+The [demo guide](docs/demo.md) describes a separate human-operated Telegram
+walkthrough. Automated tests do not replace that check of the live interface.
 
 ## Screenshots
 
-No live-account screenshots are included. Add screenshots only from a
-human-operated demo, and remove names, phone numbers, request details, group IDs,
-and private chat information before sharing them.
+Screenshots have not been added yet. Suggested captures for a controlled demo:
 
-## Further reading
+| Screen | Image |
+| --- | --- |
+| Language selection and main menu | To be added |
+| Request confirmation and status update | To be added |
+| Booking confirmation | To be added |
+| Administrator panel | To be added |
+
+Use synthetic demo details. Remove real names, phone numbers, request content,
+group IDs, and private chat information before sharing screenshots.
+
+## Project Status
+
+Version 1.2 includes requests, booking, administration, notifications, and the
+six-language interface. The project is intended for portfolio demonstrations and
+adaptation to a single business. It does not include employee calendars, payments,
+a web admin panel, AI chat, or multiple tenants.
+
+GitHub Actions runs Python checks and a Docker build with PostgreSQL integration
+tests. Review the [workflow results](https://github.com/7k9d599pvb-eng/smartlead-pro/actions)
+for the commit you plan to deploy. Configure your own credentials, business hours,
+timezone, and support contact, then complete the Telegram walkthrough before
+using it for a business.
 
 - [Deployment runbook](docs/deployment.md)
 - [Human-operated Telegram demo](docs/demo.md)
 - [v1.1 readiness audit](docs/audit-v1.1.md)
 - [v1.2 localization changes and validation](docs/changes-v1.2.0.md)
+- [Portfolio notes](PORTFOLIO.md)

@@ -71,6 +71,7 @@ logs/
 /.vexp/
 /.playwright-cli/
 /AGENTS.md
+/sites/
 
 # Editor and operating system files
 .idea/

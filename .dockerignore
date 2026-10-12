@@ -23,6 +23,7 @@ env
 .idea
 .vscode
 AGENTS.md
+/sites/
 logs
 *.log
 *.log.*
