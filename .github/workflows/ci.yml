@@ -35,9 +35,9 @@ jobs:
       TEST_DATABASE_URL: postgresql+asyncpg://smartlead_test:ci-test-password@localhost:5432/smartlead_test
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
       - name: Install locked dependencies and package
@@ -61,7 +61,7 @@ jobs:
       TEST_DATABASE_URL: postgresql+asyncpg://smartlead_test:ci-test-password@db_test:5432/smartlead_test
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
       - name: Prepare Compose environment file
         run: cp .env.example .env
       - name: Build production image

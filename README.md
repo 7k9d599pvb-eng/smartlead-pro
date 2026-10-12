@@ -1,5 +1,7 @@
 # SmartLead Pro
 
+[![CI](https://github.com/7k9d599pvb-eng/smartlead-pro/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/7k9d599pvb-eng/smartlead-pro/actions/workflows/ci.yml)
+
 ## Project Overview
 
 SmartLead Pro is a Telegram bot for small service businesses. Customers submit
@@ -8,6 +10,9 @@ requests, bookings, services, and the support contact inside Telegram.
 
 This repository is a portfolio project. It demonstrates a working single-business
 workflow without a web dashboard, payments, or an external CRM.
+
+The [60–90 second walkthrough](docs/demo.md) follows a customer request, an
+administrator's status update, a booking, and the language picker.
 
 ## Features
 
@@ -312,17 +317,30 @@ walkthrough. Automated tests do not replace that check of the live interface.
 
 ## Screenshots
 
-Screenshots have not been added yet. Suggested captures for a controlled demo:
+These owner-provided captures show recorded demo sessions. They are
+cropped to the bot messages, resized, and stripped of image metadata. Personal
+names, phone numbers, private chat identifiers, and unrelated messages are excluded.
+Request references, booking dates, and statuses are shown as captured.
 
-| Screen | Image |
-| --- | --- |
-| Language selection and main menu | To be added |
-| Request confirmation and status update | To be added |
-| Booking confirmation | To be added |
-| Administrator panel | To be added |
+**Language selection**
 
-Use synthetic demo details. Remove real names, phone numbers, request content,
-group IDs, and private chat information before sharing screenshots.
+![Language picker offering English, French, Russian, Ukrainian, German and Japanese](docs/screenshots/language-menu.jpg)
+
+**Request confirmation and status update**
+
+![Request submitted with its reference, followed by an In Progress notification](docs/screenshots/request-status.jpg)
+
+**Appointment confirmation**
+
+![Confirmed appointment with its reference, service, date and business-local time](docs/screenshots/appointment-confirmed.jpg)
+
+**Administrator panel**
+
+![Telegram administrator menu for requests, appointments, services and statistics](docs/screenshots/admin-panel.jpg)
+
+The request, booking, and administrator screens use English. The language picker
+retains its Russian prompt and native language names. See
+[Supported Languages](#supported-languages) for how preferences are stored.
 
 ## Project Status
 

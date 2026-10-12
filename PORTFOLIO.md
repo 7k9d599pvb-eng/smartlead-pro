@@ -31,6 +31,7 @@ data in the demonstration.
 ## Demo
 
 The human-operated walkthrough is documented in [docs/demo.md](docs/demo.md).
-It uses Telegram accounts controlled by the operator and an isolated demo
-database. Automated coverage and its limits are recorded in
-[docs/audit-v1.1.md](docs/audit-v1.1.md).
+The [README Screenshots section](README.md#screenshots) presents cropped,
+anonymized images from recorded demo sessions. The walkthrough uses Telegram
+accounts controlled by the operator and an isolated demo database. Automated
+coverage and its limits are recorded in [docs/audit-v1.1.md](docs/audit-v1.1.md).
